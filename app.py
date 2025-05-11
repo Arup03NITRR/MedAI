@@ -15,26 +15,46 @@ diets=pd.read_csv("./Datasets/diets.csv")
 model=pickle.load(open('model.pkl', 'rb'))
 
 def helper(disease):
-    desc=description[description['Disease']==disease]['Description']
-    desc=" ".join([w for w in desc])
-
-    pre=precautions[precautions['Disease']==disease][['Precaution_1', 'Precaution_2', 'Precaution_3', 'Precaution_4']]
-    pre=[col for col in pre.values]
-
+    # Get description
+    desc = description[description['Disease'] == disease]['Description']
+    if not desc.empty:
+        desc = " ".join([w for w in desc])
+    else:
+        desc = "No description available for this disease."
+    
+    # Get precautions
+    pre = precautions[precautions['Disease'] == disease][['Precaution_1', 'Precaution_2', 'Precaution_3', 'Precaution_4']]
+    if not pre.empty:
+        pre = [col for col in pre.values]
+    else:
+        pre = ["No precautions available for this disease."]
+    
+    # Get medications
     med = medications[medications['Disease'] == disease]['Medication']
-    med =", ".join(med.astype(str).values)
-    med = med[1:-1]
-    med = med.replace("'", "")
-
-
+    if not med.empty:
+        med = ", ".join(med.astype(str).values)
+        med = med[1:-1]
+        med = med.replace("'", "")
+    else:
+        med = "No medications available for this disease."
+    
+    # Get diet plan
     die = diets[diets['Disease'] == disease]['Diet']
-    die = die.values[0]
-    die = ast.literal_eval(die)
-    die = ', '.join(die)
-
-    wrkout = workout[workout['disease'] == disease] ['workout']
-    wrkout = wrkout.tolist()
-    return desc,pre,med,die,wrkout
+    if not die.empty:
+        die = die.values[0]
+        die = ast.literal_eval(die)
+        die = ', '.join(die)
+    else:
+        die = "No specific diet plan available for this disease."
+    
+    # Get workout recommendations
+    wrkout = workout[workout['disease'] == disease]['workout']
+    if not wrkout.empty:
+        wrkout = wrkout.tolist()
+    else:
+        wrkout = ["No workout recommendations available for this disease."]
+    
+    return desc, pre, med, die, wrkout
 
 symptoms_dict = {
     'Itching': 0, 'Skin Rash': 1, 'Nodal Skin Eruptions': 2, 'Continuous Sneezing': 3,
