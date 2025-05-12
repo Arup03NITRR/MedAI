@@ -250,14 +250,17 @@ if diagnosis:
         
         pdf_buffer = generate_patient_pdf(name, age, gender, phone, email, disease, desc, med, die, wrkout, symptoms)
 
+        def successmsg():
+            st.success("Report downloaded successfully... Check the download folder in your device...")
+
         st.download_button(
             label="📥 Download Report",
             data=pdf_buffer,
             file_name=f"{name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_report.pdf",
-            mime="application/pdf"
+            mime="application/pdf",
+            on_click=successmsg
         )
-        if st.session_state.download_clicked:
-            st.success("Report downloaded successfully... Check the download folder in your device...")
+        
 
 
 # Footer (optional)
