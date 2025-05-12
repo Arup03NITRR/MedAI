@@ -251,7 +251,7 @@ if diagnosis:
         pdf_buffer = generate_patient_pdf(name, age, gender, phone, email, disease, desc, med, die, wrkout, symptoms)
 
         def successmsg():
-            st.success("Report downloaded successfully... Check the download folder in your device...")
+            st.toast("Report downloaded successfully... Check the download folder in your device...")
 
         st.download_button(
             label="📥 Download Report",
