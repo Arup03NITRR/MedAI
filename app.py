@@ -257,6 +257,8 @@ if diagnosis:
             mime="application/pdf"
         )
 
+        st.success("Report downloaded successfully... Check the download folder in your device...")
+
 
 # Footer (optional)
 st.markdown("---")
