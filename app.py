@@ -141,7 +141,7 @@ def generate_patient_pdf(name, age, gender, phone, email, disease, desc, med, di
     pdf.set_font("Arial", "B", 8)
     india_time = datetime.now(pytz.timezone('Asia/Kolkata'))
     pdf.cell(0, 8, f"{india_time.strftime('%Y-%m-%d %H:%M:%S')}", ln=True, align="R")
-    
+
     # Patient Details
     pdf.set_text_color(0, 0, 0)
     pdf.set_font("Arial", "B", 12)
@@ -255,10 +255,11 @@ if diagnosis:
         def successmsg():
             st.toast("Report downloaded successfully... Check the download folder in your device...")
 
+        india_time = datetime.now(pytz.timezone('Asia/Kolkata'))
         st.download_button(
             label="📥 Download Report",
             data=pdf_buffer,
-            file_name=f"{name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_report.pdf",
+            file_name=f"{name}_{india_time.strftime('%Y%m%d_%H%M%S')}_report.pdf",
             mime="application/pdf",
             on_click=successmsg
         )
