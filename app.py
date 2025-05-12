@@ -5,6 +5,7 @@ import streamlit as st
 import ast
 from fpdf import FPDF
 from datetime import datetime, timezone
+import pytz
 import io
 
 sys_des=pd.read_csv("./Datasets/symtoms_df.csv")
@@ -138,8 +139,9 @@ def generate_patient_pdf(name, age, gender, phone, email, disease, desc, med, di
 
     # Generation Time
     pdf.set_font("Arial", "B", 8)
-    pdf.cell(0, 8, f"{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", ln=True, align="R")
-
+    india_time = datetime.now(pytz.timezone('Asia/Kolkata'))
+    pdf.cell(0, 8, f"{india_time.strftime('%Y-%m-%d %H:%M:%S')}", ln=True, align="R")
+    
     # Patient Details
     pdf.set_text_color(0, 0, 0)
     pdf.set_font("Arial", "B", 12)
