@@ -3,7 +3,9 @@ import pandas as pd
 import pickle
 import streamlit as st
 import ast
-
+from fpdf import FPDF
+from datetime import datetime
+import io
 
 sys_des=pd.read_csv("./Datasets/symtoms_df.csv")
 precautions=pd.read_csv("./Datasets/precautions_df.csv")
@@ -15,6 +17,7 @@ diets=pd.read_csv("./Datasets/diets.csv")
 model=pickle.load(open('model.pkl', 'rb'))
 
 def helper(disease):
+    global desc, med, die, wrkout
     # Get description
     desc = description[description['Disease'] == disease]['Description']
     if not desc.empty:
@@ -111,8 +114,91 @@ def get_predicted_value(patient_symptoms):
 
     # Get the disease name from the predicted class
     predicted_disease = diseases_list[predicted_class]
-
     return predicted_disease
+
+# PDF generation function (without OOP)
+def generate_patient_pdf(name, age, gender, phone, email, disease, desc, med, die, wrkout, symptoms):
+    pdf = FPDF()
+    pdf.add_page()
+
+    # Heading
+    pdf.set_font("Arial", "B", 16)
+    pdf.set_text_color(30, 30, 150)
+    pdf.cell(0, 15, "MedAI - Medical Report", ln=True, align="C")
+
+    # Subheading
+    pdf.set_font("Arial", "", 12)
+    pdf.set_text_color(100, 100, 100)
+    pdf.cell(0, 10, "Smarter Care, Anytime, Anywhere.", ln=True, align="C")
+
+    # Line separator
+    pdf.set_draw_color(200, 200, 200)
+    pdf.line(10, pdf.get_y() + 2, 200, pdf.get_y() + 2)
+    pdf.ln(5)
+
+    # Generation Time
+    pdf.set_font("Arial", "B", 8)
+    pdf.cell(0, 8, f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=True, align="R")
+
+    # Patient Details
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, "Patient Details:", ln=True)
+
+    patient_details = {
+        "Name": name, "Age": age, "Gender": gender,
+        "Phone No.": phone, "Email Id": email,
+        "Symptoms": ', '.join(symptoms)
+    }
+
+    for label, value in patient_details.items():
+        pdf.set_font("Arial", "B", 10)
+        pdf.cell(28, 5, f"{label} ", ln=False)
+        pdf.set_font("Arial", "", 10)
+        pdf.multi_cell(0, 5, f": {value}")
+
+    # Line separator
+    pdf.set_draw_color(200, 200, 200)
+    pdf.line(10, pdf.get_y() + 2, 200, pdf.get_y() + 2)
+    pdf.ln(5)
+
+    # Diagnosis
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, "Diagnosis:", ln=True)
+
+    pdf.set_font("Arial", "B", 10)
+    pdf.cell(35, 5, f"Predicted Disease", ln=False)
+    pdf.set_font("Arial", "", 10)
+    pdf.multi_cell(0, 5, f": {disease}")
+
+    pdf.set_font("Arial", "B", 10)
+    pdf.cell(35, 5, f"Description", ln=False)
+    pdf.set_font("Arial", "", 10)
+    pdf.multi_cell(0, 5, f": {desc}")
+
+    pdf.set_font("Arial", "B", 10)
+    pdf.cell(35, 5, f"Medications", ln=False)
+    pdf.set_font("Arial", "", 10)
+    pdf.multi_cell(0, 5, f": {med}")
+
+    pdf.set_font("Arial", "B", 10)
+    pdf.cell(35, 5, "Diets:", ln=True)
+    pdf.set_font("Arial", "", 10)
+    for item in die.split(','):
+        pdf.multi_cell(0, 5, f"    - {item.strip()}")
+
+    pdf.set_font("Arial", "B", 10)
+    pdf.cell(35, 5, "Workouts:", ln=True)
+    pdf.set_font("Arial", "", 10)
+    for item in wrkout:  # assuming comma-separated string
+        pdf.multi_cell(0, 5, f"\t\t\t\t- {item.strip()}")
+
+    pdf_bytes = pdf.output(dest='S').encode('latin1')
+
+    # Output to memory buffer
+    buffer = io.BytesIO(pdf_bytes)
+    buffer.seek(0)
+    return buffer
 
 
 st.set_page_config(page_title="MedAI", page_icon="🩺")
@@ -123,19 +209,27 @@ st.markdown("<h4 style='color:gray;'>Smarter Care, Anytime, Anywhere.</h4>", uns
 
 # Input Section
 st.markdown("---")
+st.markdown("### 🙍‍♂️ Patient Details")
+name = st.text_input("Enter patient name")
+age = st.text_input("Enter patient age")
+gender = st.radio("Select gender", ['Male', 'Female'])
+phone = st.text_input("Enter phone number")
+email = st.text_input("Enter email id")
 st.markdown("### 🔍 Select Symptoms")
 symptoms = st.multiselect("Choose your symptoms", sorted(list(symptoms_dict.keys())))
 
 # Button
 diagnosis = st.button("🧬 Get Diagnosis")
 
+disease = get_predicted_value(symptoms)
+desc, pre, med, die, wrkout = helper(disease)
+
 # Output Section
 if diagnosis:
     if len(symptoms) == 0:
         st.warning("⚠️ Please select at least one symptom.")
     else:
-        disease = get_predicted_value(symptoms)
-        desc, pre, med, die, wrkout = helper(disease)
+        st.session_state.show_pdf_button = True
 
         # Create a collapsible container for the report
         st.expander("📝 Diagnosis Report", expanded=True)
@@ -153,6 +247,17 @@ if diagnosis:
         # Workout Recommendations Section
         st.expander("🏃 Workout Recommendations", expanded=False).markdown('\n'.join([f"- {tip}" for tip in wrkout]))
 
-        # Footer (optional)
-        st.markdown("---")
-        st.markdown("<p style='text-align:center; color:gray;'>Powered by MedAI © 2025</p>", unsafe_allow_html=True)
+        
+        pdf_buffer = generate_patient_pdf(name, age, gender, phone, email, disease, desc, med, die, wrkout, symptoms)
+
+        st.download_button(
+            label="📥 Download Report",
+            data=pdf_buffer,
+            file_name=f"{name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_report.pdf",
+            mime="application/pdf"
+        )
+
+
+# Footer (optional)
+st.markdown("---")
+st.markdown("<p style='text-align:center; color:gray;'>Powered by MedAI © 2025</p>", unsafe_allow_html=True)
