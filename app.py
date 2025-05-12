@@ -256,8 +256,8 @@ if diagnosis:
             file_name=f"{name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_report.pdf",
             mime="application/pdf"
         )
-
-        st.success("Report downloaded successfully... Check the download folder in your device...")
+        if st.session_state.download_clicked:
+            st.success("Report downloaded successfully... Check the download folder in your device...")
 
 
 # Footer (optional)
