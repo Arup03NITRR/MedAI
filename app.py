@@ -14,6 +14,7 @@ workout=pd.read_csv("./Datasets/workout_df.csv")
 description=pd.read_csv("./Datasets/description.csv")
 medications=pd.read_csv("./Datasets/medications.csv")
 diets=pd.read_csv("./Datasets/diets.csv")
+doctor=pd.read_csv("./Datasets/disease_doctor.csv")
 
 model=pickle.load(open('model.pkl', 'rb'))
 
@@ -102,6 +103,7 @@ symptoms_dict = {
     'Red Sore Around Nose': 130, 'Yellow Crust Ooze': 131
 }
 diseases_list = {15: 'Fungal infection', 4: 'Allergy', 16: 'GERD', 9: 'Chronic cholestasis', 14: 'Drug Reaction', 33: 'Peptic ulcer diseae', 1: 'AIDS', 12: 'Diabetes ', 17: 'Gastroenteritis', 6: 'Bronchial Asthma', 23: 'Hypertension ', 30: 'Migraine', 7: 'Cervical spondylosis', 32: 'Paralysis (brain hemorrhage)', 28: 'Jaundice', 29: 'Malaria', 8: 'Chicken pox', 11: 'Dengue', 37: 'Typhoid', 40: 'hepatitis A', 19: 'Hepatitis B', 20: 'Hepatitis C', 21: 'Hepatitis D', 22: 'Hepatitis E', 3: 'Alcoholic hepatitis', 36: 'Tuberculosis', 10: 'Common Cold', 34: 'Pneumonia', 13: 'Dimorphic hemmorhoids(piles)', 18: 'Heart attack', 39: 'Varicose veins', 26: 'Hypothyroidism', 24: 'Hyperthyroidism', 25: 'Hypoglycemia', 31: 'Osteoarthristis', 5: 'Arthritis', 0: '(vertigo) Paroymsal  Positional Vertigo', 2: 'Acne', 38: 'Urinary tract infection', 35: 'Psoriasis', 27: 'Impetigo'}
+
 
 # Model Prediction function
 def get_predicted_value(patient_symptoms):
@@ -195,6 +197,14 @@ def generate_patient_pdf(name, age, gender, phone, email, disease, desc, med, di
     for item in wrkout:  # assuming comma-separated string
         pdf.multi_cell(0, 5, f"\t\t\t\t- {item.strip()}")
 
+    matched = doctor[doctor['Disease'] == disease]
+    if not matched.empty:
+        specialist = matched['Specialized Doctor'].values[0]
+        pdf.set_font("Arial", "B", 10)
+        pdf.cell(35, 5, "Consultation:", ln=True)
+        pdf.set_font("Arial", "", 10)
+        pdf.multi_cell(0, 5, f"Consult to nearby {specialist}.")
+
     pdf_bytes = pdf.output(dest='S').encode('latin1')
 
     # Output to memory buffer
@@ -249,6 +259,13 @@ if diagnosis:
         # Workout Recommendations Section
         st.expander("🏃 Workout Recommendations", expanded=False).markdown('\n'.join([f"- {tip}" for tip in wrkout]))
 
+        # Consultation Section
+        matched = doctor[doctor['Disease'] == disease]
+        if not matched.empty:
+            specialist = matched['Specialized Doctor'].values[0]
+            st.expander("🏃 Consultation", expanded=False).markdown(f"Consult with nearby {specialist}")
+        else:
+            st.expander("🏃 Consultation", expanded=False).markdown("No specialist found for this disease.")
         
         pdf_buffer = generate_patient_pdf(name, age, gender, phone, email, disease, desc, med, die, wrkout, symptoms)
 
