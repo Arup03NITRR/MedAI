@@ -1,28 +1,41 @@
-FROM python:3.11-slim
+# ---------- Stage 1: Build Stage ----------
+FROM python:3.11 AS builder
 
-# Set working directory
-WORKDIR /app
+WORKDIR /install
 
-# Install required system packages for numpy, pandas, matplotlib, etc.
+# System dependencies for building Python packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libatlas-base-dev \
     libjpeg-dev \
     libpng-dev \
-    libfreetype6-dev \
-    libgl1-mesa-glx \
-    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy only requirements first to cache dependencies
+# Copy and install requirements
 COPY requirements.txt .
 
-# Install Python dependencies
-RUN pip install --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+# Install to a custom directory to copy later
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir --prefix=/install/packages -r requirements.txt
 
-# Copy the rest of your app
+
+# ---------- Stage 2: Runtime Stage ----------
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Runtime dependencies (only the ones needed to run the code)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libatlas-base-dev \
+    libjpeg62-turbo \
+    libpng16-16 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy installed packages from builder
+COPY --from=builder /install/packages /usr/local
+
+# Copy application code
 COPY . .
 
-# Run the app
+# Run your Streamlit app (change as per your entrypoint)
 CMD ["streamlit", "run", "app.py"]
